@@ -1,0 +1,14 @@
+.env
+.env.example
+.venv/
+venv/
+__pycache__/
+*.pyc
+app.db
+app/data/faiss.index
+app/data/faiss_metadata.json
+app/uploads/*
+!app/uploads/.gitkeep
+frontend/node_modules/
+frontend/dist/
+
