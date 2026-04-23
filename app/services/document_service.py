@@ -99,6 +99,12 @@ def list_documents(db: Session) -> list[Document]:
 def delete_document(db: Session, document_id: int) -> None:
     document = db.query(Document).filter(Document.id == document_id).first()
     if not document:
+        has_vector_document = any(
+            item.get("document_id") == document_id for item in vector_store.metadata
+        )
+        if has_vector_document:
+            vector_store.remove_document(document_id)
+            return
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found.")
 
     file_path = document.file_path

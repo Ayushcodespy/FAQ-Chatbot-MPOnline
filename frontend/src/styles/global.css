@@ -767,6 +767,22 @@ select {
   color: white;
 }
 
+.auth-switch-row {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.auth-switch-row button {
+  border: 0;
+  background: transparent;
+  color: var(--accent-dark);
+  font-weight: 800;
+  padding: 0;
+}
+
 .badge {
   border-radius: 999px;
   padding: 6px 10px;
@@ -1674,6 +1690,59 @@ select {
   border: 1px solid rgba(180, 83, 9, 0.1);
 }
 
+.landing-footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) auto;
+  align-items: center;
+  gap: 18px;
+  margin: 8px auto 28px;
+  padding: 26px 28px;
+  max-width: 1280px;
+  border: 1px solid rgba(180, 83, 9, 0.12);
+  border-radius: 30px;
+  background:
+    radial-gradient(circle at top left, rgba(247, 207, 122, 0.32), transparent 32%),
+    linear-gradient(135deg, rgba(255, 250, 242, 0.92), rgba(244, 226, 190, 0.82));
+  box-shadow: 0 22px 52px rgba(79, 50, 16, 0.1);
+  color: #3f2b1d;
+}
+
+.landing-footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.landing-footer-brand p {
+  margin: 4px 0 0;
+  color: #7b6a55;
+}
+
+.landing-footer-links {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.landing-footer-links a,
+.landing-footer-links button {
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.58);
+  color: #7c2d12;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: inset 0 0 0 1px rgba(180, 83, 9, 0.08);
+}
+
+.landing-footer small {
+  grid-column: 1 / -1;
+  color: #7b6a55;
+}
+
 .landing-floating-chat {
   position: fixed;
   right: 28px;
@@ -1691,8 +1760,11 @@ select {
   max-height: calc(100vh - 32px);
   padding: 16px;
   border-radius: 24px;
-  background: rgba(63, 43, 29, 0.96);
-  color: #fff6ea;
+  background:
+    radial-gradient(circle at top right, rgba(247, 207, 122, 0.18), transparent 34%),
+    linear-gradient(180deg, #3f2b1d 0%, #2b1c13 100%);
+  color: #fffaf3;
+  border: 1px solid rgba(255, 246, 234, 0.18);
   box-shadow: 0 30px 60px rgba(28, 14, 10, 0.28);
   overflow: hidden;
 }
@@ -1713,8 +1785,8 @@ select {
 .floating-chat-close {
   padding: 8px 12px;
   border-radius: 12px;
-  background: rgba(255, 246, 234, 0.12);
-  color: #fff6ea;
+  background: rgba(255, 250, 243, 0.16);
+  color: #fffaf3;
 }
 
 .floating-chat-feed {
@@ -1738,21 +1810,38 @@ select {
   margin: 0;
 }
 
+.floating-message p,
+.floating-message li {
+  color: inherit;
+}
+
 .floating-message {
+  width: fit-content;
+  max-width: min(88%, 760px);
   padding: 12px 14px;
   border-radius: 18px;
+  line-height: 1.55;
 }
 
 .floating-message.assistant {
-  background: rgba(255, 255, 255, 0.1);
+  justify-self: start;
+  background: #fff8ec;
+  color: #2b1c13;
+  border: 1px solid rgba(247, 207, 122, 0.5);
 }
 
 .floating-message.assistant.waiting {
-  border: 1px dashed rgba(255, 246, 234, 0.24);
+  background: #fff1d6;
+  border: 1px dashed rgba(180, 83, 9, 0.45);
 }
 
 .floating-message.user {
-  background: rgba(180, 83, 9, 0.72);
+  justify-self: end;
+  background: linear-gradient(135deg, #fff1d6 0%, #f7cf7a 100%);
+  color: #3f2b1d;
+  border: 1px solid rgba(180, 83, 9, 0.22);
+  font-weight: 700;
+  text-align: right;
 }
 
 .floating-chat-composer {
@@ -1762,6 +1851,9 @@ select {
 .floating-chat-composer input {
   flex: 1 1 auto;
   min-width: 0;
+  background: #fffaf3;
+  color: #2b1c13;
+  border-color: rgba(247, 207, 122, 0.42);
 }
 
 .floating-chat-composer input:disabled {
@@ -1776,16 +1868,53 @@ select {
   justify-content: center;
   width: 98px;
   height: 98px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #b45309, #7c2d12);
-  color: white;
-  box-shadow: 0 30px 60px rgba(79, 50, 16, 0.28);
+  border-radius: 0;
+  background: transparent;
+  color: #3f2b1d;
+  border: 0;
+  box-shadow: none;
+}
+
+.floating-logo-mark {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 86px;
+  height: 86px;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.floating-logo-ring {
+  display: none;
+}
+
+.floating-logo-image {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  object-fit: contain;
+  filter: drop-shadow(0 16px 28px rgba(79, 50, 16, 0.24));
+}
+
+.floating-logo-core {
+  position: relative;
+  z-index: 1;
+  color: #7c2d12;
+  font-size: 1.18rem;
+  font-weight: 900;
+  letter-spacing: -0.06em;
 }
 
 .floating-chat-badge {
   position: absolute;
-  right: 8px;
-  bottom: 8px;
+  right: 6px;
+  bottom: 6px;
   width: 18px;
   height: 18px;
   border-radius: 999px;
@@ -1899,6 +2028,16 @@ select {
 
   .landing-hero {
     grid-template-columns: 1fr;
+  }
+
+  .landing-footer {
+    grid-template-columns: 1fr;
+    margin: 8px 16px 120px;
+    padding: 22px;
+  }
+
+  .landing-footer-links {
+    justify-content: flex-start;
   }
 
   .landing-floating-chat {

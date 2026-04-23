@@ -90,7 +90,7 @@ function Layout({ children }) {
 
   const logout = () => {
     clearSession();
-    navigate("/login");
+    navigate("/");
   };
 
   const toggleSidebar = () => {

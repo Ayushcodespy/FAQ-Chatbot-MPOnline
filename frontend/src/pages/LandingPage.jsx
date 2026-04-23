@@ -287,6 +287,27 @@ function LandingPage() {
         </section>
       </main>
 
+      <footer className="landing-footer">
+        <div className="landing-footer-brand">
+          <span className="landing-brand-mark">
+            <LandingIcon name="bot" />
+          </span>
+          <div>
+            <strong>MPOnline FAQ Chatbot</strong>
+            <p>Document-grounded public help with protected grievance support.</p>
+          </div>
+        </div>
+        <div className="landing-footer-links">
+          <a href="#home">Home</a>
+          <a href="#topics">Topics</a>
+          <a href="#help">How It Works</a>
+          <button onClick={() => navigate(user ? "/grievances" : "/login")} type="button">
+            Grievance
+          </button>
+        </div>
+        <small>© {new Date().getFullYear()} MPOnline FAQ Assistant. Built for fast, grounded answers.</small>
+      </footer>
+
       <div className="landing-floating-chat">
         {chatOpen && (
           <div className={chatExpanded ? "floating-chat-panel expanded" : "floating-chat-panel"}>
@@ -355,7 +376,18 @@ function LandingPage() {
           aria-label="Open chatbot"
         >
           <span className="floating-chat-badge" />
-          <LandingIcon name="bot" />
+          <span className="floating-logo-mark" aria-hidden="true">
+            <img
+              alt=""
+              className="floating-logo-image"
+              onError={(event) => {
+                event.currentTarget.style.display = "none";
+              }}
+              src="/chatbot/chatbot-icon.png"
+            />
+            <span className="floating-logo-ring" />
+            <span className="floating-logo-core">MP</span>
+          </span>
         </button>
       </div>
     </div>

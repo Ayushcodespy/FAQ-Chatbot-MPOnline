@@ -1,5 +1,5 @@
 import json
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 from fastapi import HTTPException, status
@@ -8,15 +8,19 @@ from openai import OpenAI
 from app.config import Settings, get_settings
 
 try:
-    import google.generativeai as genai
+    from google import genai
+    from google.genai import types as genai_types
 except ImportError:  # pragma: no cover
     genai = None
+    genai_types = None
 
 
 class AIService:
     def __init__(self, settings: Settings | None = None) -> None:
         self.settings = settings or get_settings()
         self.provider = self.settings.llm_provider.lower()
+        self.openai_client: OpenAI | None = None
+        self.gemini_client: Any | None = None
 
         if self.provider == "openai":
             if not self.settings.openai_api_key:
@@ -24,20 +28,19 @@ class AIService:
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="OPENAI_API_KEY is not configured",
                 )
-            self.client = OpenAI(api_key=self.settings.openai_api_key)
+            self.openai_client = OpenAI(api_key=self.settings.openai_api_key)
         elif self.provider == "gemini":
-            if genai is None:
+            if genai is None or genai_types is None:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="google-generativeai is not installed",
+                    detail="google-genai is not installed",
                 )
             if not self.settings.gemini_api_key:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="GEMINI_API_KEY is not configured",
                 )
-            genai.configure(api_key=self.settings.gemini_api_key)
-            self.client = genai
+            self.gemini_client = genai.Client(api_key=self.settings.gemini_api_key)
         else:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -49,36 +52,40 @@ class AIService:
             return []
 
         if self.provider == "openai":
-            response = self.client.embeddings.create(
+            client = self._openai_client()
+            response = client.embeddings.create(
                 model=self.settings.openai_embedding_model,
                 input=texts,
             )
             return [item.embedding for item in response.data]
 
+        client = self._gemini_client()
         embeddings: list[list[float]] = []
         for text in texts:
-            result = self.client.embed_content(
+            result = client.models.embed_content(
                 model=self.settings.gemini_embedding_model,
-                content=text,
-                task_type="retrieval_document",
+                contents=text,
+                config=self._gemini_embed_config("RETRIEVAL_DOCUMENT"),
             )
-            embeddings.append(result["embedding"])
+            embeddings.append(list(result.embeddings[0].values))
         return embeddings
 
     def embed_query(self, text: str) -> list[float]:
         if self.provider == "openai":
-            response = self.client.embeddings.create(
+            client = self._openai_client()
+            response = client.embeddings.create(
                 model=self.settings.openai_embedding_model,
                 input=[text],
             )
             return response.data[0].embedding
 
-        result = self.client.embed_content(
+        client = self._gemini_client()
+        result = client.models.embed_content(
             model=self.settings.gemini_embedding_model,
-            content=text,
-            task_type="retrieval_query",
+            contents=text,
+            config=self._gemini_embed_config("RETRIEVAL_QUERY"),
         )
-        return result["embedding"]
+        return list(result.embeddings[0].values)
 
     def generate_grounded_answer(
         self,
@@ -125,7 +132,8 @@ Context:
 """
 
         if self.provider == "openai":
-            response = self.client.chat.completions.create(
+            client = self._openai_client()
+            response = client.chat.completions.create(
                 model=self.settings.openai_chat_model,
                 temperature=0,
                 response_format={"type": "json_object"},
@@ -136,10 +144,47 @@ Context:
             )
             raw_output = response.choices[0].message.content or "{}"
         else:
-            model = self.client.GenerativeModel(self.settings.gemini_chat_model)
-            response = model.generate_content(prompt)
+            client = self._gemini_client()
+            response = client.models.generate_content(
+                model=self.settings.gemini_chat_model,
+                contents=prompt,
+                config=self._gemini_generate_config(),
+            )
             raw_output = self._strip_code_fences(getattr(response, "text", "{}"))
 
+        return self._parse_answer_payload(raw_output)
+
+    def _openai_client(self) -> OpenAI:
+        if self.openai_client is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="OpenAI client is not initialized",
+            )
+        return self.openai_client
+
+    def _gemini_client(self) -> Any:
+        if self.gemini_client is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Gemini client is not initialized",
+            )
+        return self.gemini_client
+
+    @staticmethod
+    def _gemini_embed_config(task_type: str) -> Any:
+        types_module = cast(Any, genai_types)
+        return types_module.EmbedContentConfig(task_type=task_type)
+
+    @staticmethod
+    def _gemini_generate_config() -> Any:
+        types_module = cast(Any, genai_types)
+        return types_module.GenerateContentConfig(
+                    temperature=0,
+                    response_mime_type="application/json",
+        )
+
+    @staticmethod
+    def _parse_answer_payload(raw_output: str) -> dict[str, Any]:
         try:
             data = json.loads(raw_output)
         except json.JSONDecodeError:

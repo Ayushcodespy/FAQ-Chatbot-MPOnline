@@ -96,7 +96,25 @@ def generate_answer_payload(question: str, language: str) -> dict:
             "escalated": True,
         }
 
-    llm_result = ai_service.generate_grounded_answer(question, filtered_matches, language)
+    try:
+        llm_result = ai_service.generate_grounded_answer(question, filtered_matches, language)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        error_name = exc.__class__.__name__
+        error_text = str(exc)
+        if "ResourceExhausted" in error_name or "429" in error_text or "quota" in error_text.lower():
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=(
+                    "Gemini quota or rate limit exceeded. Please wait a minute and try again, "
+                    "or switch GEMINI_CHAT_MODEL to a model with available quota."
+                ),
+            ) from exc
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="The AI provider failed to generate an answer. Please try again.",
+        ) from exc
     grounded = llm_result["grounded"]
     confidence = min(
         llm_result["confidence"],
@@ -129,8 +147,8 @@ def answer_question(
     language: str,
     session_id: int | None = None,
 ) -> dict:
-    session = get_chat_session(db, user, session_id) if session_id else create_chat_session(db, user)
     answer_payload = generate_answer_payload(question, language)
+    session = get_chat_session(db, user, session_id) if session_id else create_chat_session(db, user)
 
     if answer_payload["escalated"] and answer_payload["answer"] == "I don't know":
         create_expert_query(db, user, question, "no_relevant_context")

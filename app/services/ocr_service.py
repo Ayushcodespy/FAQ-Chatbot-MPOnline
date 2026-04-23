@@ -1,7 +1,7 @@
 from pathlib import Path
 
-import fitz
 import pytesseract
+from fastapi import HTTPException, status
 from PIL import Image
 
 from app.config import get_settings
@@ -23,6 +23,11 @@ def extract_text_from_image(file_path: str) -> str:
 
 def extract_text_from_pdf(file_path: str) -> str:
     configure_tesseract()
+    try:
+        import fitz
+    except Exception as exc:
+        return extract_text_from_pdf_with_pypdf(file_path, exc)
+
     document = fitz.open(file_path)
     pages: list[str] = []
 
@@ -43,9 +48,41 @@ def extract_text_from_pdf(file_path: str) -> str:
     return clean_text(" ".join(pages))
 
 
+def extract_text_from_pdf_with_pypdf(file_path: str, original_error: Exception) -> str:
+    try:
+        from pypdf import PdfReader
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=(
+                "PDF extraction is unavailable because PyMuPDF/MuPDF could not be loaded "
+                "and the pypdf fallback is not installed."
+            ),
+        ) from exc
+
+    try:
+        reader = PdfReader(file_path)
+        text = " ".join(page.extract_text() or "" for page in reader.pages)
+        cleaned = clean_text(text)
+        if cleaned:
+            return cleaned
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="No text could be extracted from this PDF using the available fallback extractor.",
+        ) from exc
+
+    raise HTTPException(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        detail=(
+            "No selectable text could be extracted from this PDF. PyMuPDF is blocked on this system, "
+            "so scanned PDFs that need OCR cannot be processed until PyMuPDF works or images are uploaded."
+        ),
+    ) from original_error
+
+
 def extract_text(file_path: str) -> str:
     suffix = Path(file_path).suffix.lower()
     if suffix == ".pdf":
         return extract_text_from_pdf(file_path)
     return extract_text_from_image(file_path)
-

@@ -81,40 +81,30 @@ function LoginPage() {
           </p>
         </div>
 
-        <div className="tab-row">
-          <button
-            className={mode === "login-password" ? "tab active" : "tab"}
-            onClick={() => {
-              setMode("login-password");
-              resetMessages();
-            }}
-            type="button"
-          >
-            Login With Password
-          </button>
-          <button
-            className={mode === "login-otp" ? "tab active" : "tab"}
-            onClick={() => {
-              setMode("login-otp");
-              resetMessages();
-            }}
-            type="button"
-          >
-            Login With OTP
-          </button>
-          <button
-            className={mode === "register" ? "tab active" : "tab"}
-            onClick={() => {
-              setMode("register");
-              setRegisterStep("form");
-              setRegisterOtp("");
-              resetMessages();
-            }}
-            type="button"
-          >
-            Register
-          </button>
-        </div>
+        {mode !== "register" && (
+          <div className="tab-row">
+            <button
+              className={mode === "login-password" ? "tab active" : "tab"}
+              onClick={() => {
+                setMode("login-password");
+                resetMessages();
+              }}
+              type="button"
+            >
+              Login With Password
+            </button>
+            <button
+              className={mode === "login-otp" ? "tab active" : "tab"}
+              onClick={() => {
+                setMode("login-otp");
+                resetMessages();
+              }}
+              type="button"
+            >
+              Login With OTP
+            </button>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="form-grid">
           {mode === "register" ? (
@@ -216,6 +206,40 @@ function LoginPage() {
                     : "Send Registration OTP"}
           </button>
         </form>
+
+        <div className="auth-switch-row">
+          {mode === "register" ? (
+            <>
+              <span>Already have an account?</span>
+              <button
+                onClick={() => {
+                  setMode("login-password");
+                  setRegisterStep("form");
+                  setRegisterOtp("");
+                  resetMessages();
+                }}
+                type="button"
+              >
+                Login
+              </button>
+            </>
+          ) : (
+            <>
+              <span>Don't have an account?</span>
+              <button
+                onClick={() => {
+                  setMode("register");
+                  setRegisterStep("form");
+                  setRegisterOtp("");
+                  resetMessages();
+                }}
+                type="button"
+              >
+                Register
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
