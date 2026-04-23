@@ -3,8 +3,8 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../services/api";
 
 const navItems = [
-  { to: "/grievances", label: "Grievance", icon: "grievance" },
   { to: "/dashboard", label: "Dashboard", icon: "dashboard", roles: ["admin", "expert"] },
+  { to: "/grievances", label: "Grievance", icon: "grievance" },
   { to: "/upload", label: "Upload", icon: "upload", roles: ["admin"] },
   { to: "/experts", label: "Experts", icon: "expert", roles: ["admin", "expert"] },
 ];
@@ -99,6 +99,7 @@ function SidebarIcon({ name }) {
 function AppSidebar({ collapsed, grievanceCount, onToggleCollapse, user }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const homeRoute = user?.role === "admin" || user?.role === "expert" ? "/dashboard" : "/chat";
   const [sessions, setSessions] = useState([]);
   const [menuOpenId, setMenuOpenId] = useState(null);
   const [feedbackModal, setFeedbackModal] = useState(null);
@@ -128,13 +129,11 @@ function AppSidebar({ collapsed, grievanceCount, onToggleCollapse, user }) {
   }, []);
 
   const startNewChat = async () => {
-    try {
-      const { data } = await api.post("/chat/sessions", { title: "New chat" });
-      window.dispatchEvent(new Event("chat-session-change"));
-      navigate(`/chat?session=${data.id}`);
-    } catch {
-      navigate("/chat");
+    setMenuOpenId(null);
+    if (location.pathname === "/chat" && !activeSessionId) {
+      return;
     }
+    navigate("/chat?draft=1");
   };
 
   const deleteSession = async (sessionId) => {
@@ -212,7 +211,7 @@ function AppSidebar({ collapsed, grievanceCount, onToggleCollapse, user }) {
         </button>
 
         <div className="app-sidebar-top">
-          <button className="sidebar-brand" onClick={() => navigate("/chat")} type="button">
+          <button className="sidebar-brand" onClick={() => navigate(homeRoute)} type="button">
             <span className="sidebar-brand-mark" aria-hidden="true">
               <span className="sidebar-brand-ring" />
               <span className="sidebar-brand-core">M</span>

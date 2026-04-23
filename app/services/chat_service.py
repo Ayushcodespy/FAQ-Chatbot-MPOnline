@@ -37,9 +37,14 @@ def create_chat_session(db: Session, user: User, title: str | None = None) -> Ch
 
 
 def get_chat_sessions(db: Session, user: User) -> list[ChatSession]:
+    message_exists = (
+        db.query(ChatMessage.id)
+        .filter(ChatMessage.session_id == ChatSession.id)
+        .exists()
+    )
     return (
         db.query(ChatSession)
-        .filter(ChatSession.user_id == user.id)
+        .filter(ChatSession.user_id == user.id, message_exists)
         .order_by(ChatSession.updated_at.desc())
         .all()
     )
@@ -67,21 +72,13 @@ def delete_chat_session(db: Session, user: User, session_id: int) -> None:
     db.commit()
 
 
-def answer_question(
-    db: Session,
-    user: User,
-    question: str,
-    language: str,
-    session_id: int | None = None,
-) -> dict:
+def generate_answer_payload(question: str, language: str) -> dict:
     settings = get_settings()
     if vector_store.index is None or vector_store.index.ntotal == 0:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="No knowledge base is available. Upload documents first.",
         )
-
-    session = get_chat_session(db, user, session_id) if session_id else create_chat_session(db, user)
 
     ai_service = AIService(settings)
     query_embedding = ai_service.embed_query(question)
@@ -92,36 +89,53 @@ def answer_question(
     ]
 
     if not filtered_matches:
-        create_expert_query(db, user, question, "no_relevant_context")
-        answer_payload = {
+        return {
             "answer": "I don't know",
             "confidence": 0.0,
             "sources": [],
             "escalated": True,
         }
-    else:
-        llm_result = ai_service.generate_grounded_answer(question, filtered_matches, language)
-        grounded = llm_result["grounded"]
-        confidence = min(
-            llm_result["confidence"],
-            max(float(item["score"]) for item in filtered_matches),
-        )
-        escalated = not grounded or confidence < settings.min_similarity_score
-        if escalated:
-            create_expert_query(db, user, question, "low_confidence")
 
-        answer_payload = {
-            "answer": llm_result["answer"] if grounded else "I don't know",
-            "confidence": round(confidence if grounded else 0.0, 3),
-            "sources": sorted(
-                {
-                    item["document_name"]
-                    for item in filtered_matches
-                    if item["document_name"] in llm_result["sources"] or grounded
-                }
-            ),
-            "escalated": escalated,
-        }
+    llm_result = ai_service.generate_grounded_answer(question, filtered_matches, language)
+    grounded = llm_result["grounded"]
+    confidence = min(
+        llm_result["confidence"],
+        max(float(item["score"]) for item in filtered_matches),
+    )
+    escalated = not grounded or confidence < settings.min_similarity_score
+
+    return {
+        "answer": llm_result["answer"] if grounded else "I don't know",
+        "confidence": round(confidence if grounded else 0.0, 3),
+        "sources": sorted(
+            {
+                item["document_name"]
+                for item in filtered_matches
+                if item["document_name"] in llm_result["sources"] or grounded
+            }
+        ),
+        "escalated": escalated,
+    }
+
+
+def answer_public_question(question: str, language: str) -> dict:
+    return generate_answer_payload(question, language)
+
+
+def answer_question(
+    db: Session,
+    user: User,
+    question: str,
+    language: str,
+    session_id: int | None = None,
+) -> dict:
+    session = get_chat_session(db, user, session_id) if session_id else create_chat_session(db, user)
+    answer_payload = generate_answer_payload(question, language)
+
+    if answer_payload["escalated"] and answer_payload["answer"] == "I don't know":
+        create_expert_query(db, user, question, "no_relevant_context")
+    elif answer_payload["escalated"]:
+        create_expert_query(db, user, question, "low_confidence")
 
     history = ChatHistory(
         user_id=user.id,

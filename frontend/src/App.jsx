@@ -5,18 +5,21 @@ import ChatPage from "./pages/ChatPage";
 import DashboardPage from "./pages/DashboardPage";
 import ExpertPanelPage from "./pages/ExpertPanelPage";
 import GrievancePage from "./pages/GrievancePage";
+import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import UploadPage from "./pages/UploadPage";
 import { useAuth } from "./context/AuthContext";
 
 function App() {
   const { user } = useAuth();
+  const homeRoute = user?.role === "admin" || user?.role === "expert" ? "/dashboard" : "/chat";
 
   return (
     <Routes>
+      <Route path="/" element={<LandingPage />} />
       <Route
         path="/login"
-        element={user ? <Navigate to="/chat" replace /> : <LoginPage />}
+        element={user ? <Navigate to={homeRoute} replace /> : <LoginPage />}
       />
       <Route
         path="/chat"
@@ -68,7 +71,7 @@ function App() {
           </ProtectedRoute>
         }
       />
-      <Route path="*" element={<Navigate to={user ? "/chat" : "/login"} replace />} />
+      <Route path="*" element={<Navigate to={user ? homeRoute : "/"} replace />} />
     </Routes>
   );
 }

@@ -32,7 +32,7 @@ def save_upload(file: UploadFile) -> str:
     return str(destination)
 
 
-def ingest_document(db: Session, file: UploadFile, user: User) -> Document:
+def ingest_document(db: Session, file: UploadFile, user: User, title: str | None = None) -> Document:
     saved_path = save_upload(file)
     document: Document | None = None
     try:
@@ -59,6 +59,7 @@ def ingest_document(db: Session, file: UploadFile, user: User) -> Document:
         embeddings = ai_service.embed_texts(chunks)
 
         document = Document(
+            title=(title or file.filename or Path(saved_path).stem).strip()[:255] or Path(saved_path).stem,
             filename=file.filename or Path(saved_path).name,
             file_path=saved_path,
             extracted_text=extracted_text,
@@ -72,7 +73,7 @@ def ingest_document(db: Session, file: UploadFile, user: User) -> Document:
         metadata = [
             {
                 "document_id": document.id,
-                "document_name": document.filename,
+                "document_name": document.title or document.filename,
                 "chunk_index": index,
                 "text": chunk,
             }
@@ -89,3 +90,21 @@ def ingest_document(db: Session, file: UploadFile, user: User) -> Document:
         if os.path.exists(saved_path):
             os.remove(saved_path)
         raise
+
+
+def list_documents(db: Session) -> list[Document]:
+    return db.query(Document).order_by(Document.created_at.desc()).all()
+
+
+def delete_document(db: Session, document_id: int) -> None:
+    document = db.query(Document).filter(Document.id == document_id).first()
+    if not document:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found.")
+
+    file_path = document.file_path
+    db.delete(document)
+    db.commit()
+    vector_store.remove_document(document_id)
+
+    if file_path and os.path.exists(file_path):
+        os.remove(file_path)

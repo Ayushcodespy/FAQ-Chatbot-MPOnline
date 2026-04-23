@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import inspect, text
 
 from app.config import get_settings
 from app.database import Base, SessionLocal, engine
@@ -19,9 +20,19 @@ from app.services.auth_service import ensure_bootstrap_admin
 settings = get_settings()
 
 
+def ensure_runtime_columns() -> None:
+    inspector = inspect(engine)
+    document_columns = {column["name"] for column in inspector.get_columns("documents")}
+    with engine.begin() as connection:
+      if "title" not in document_columns:
+          connection.execute(text("ALTER TABLE documents ADD COLUMN title VARCHAR(255)"))
+          connection.execute(text("UPDATE documents SET title = filename WHERE title IS NULL"))
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     Base.metadata.create_all(bind=engine)
+    ensure_runtime_columns()
     db = SessionLocal()
     try:
         ensure_bootstrap_admin(

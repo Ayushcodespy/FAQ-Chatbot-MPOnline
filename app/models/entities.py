@@ -41,6 +41,7 @@ class Document(Base):
     __tablename__ = "documents"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    title: Mapped[str | None] = mapped_column(String(255), nullable=True)
     filename: Mapped[str] = mapped_column(String(255), nullable=False)
     file_path: Mapped[str] = mapped_column(String(500), nullable=False)
     extracted_text: Mapped[str] = mapped_column(Text, nullable=False)
@@ -176,3 +177,16 @@ class Notification(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
     user: Mapped["User"] = relationship(back_populates="notifications")
+
+
+class EmailOTP(Base):
+    __tablename__ = "email_otps"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    email: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    purpose: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    otp_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    pending_username: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    pending_password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)

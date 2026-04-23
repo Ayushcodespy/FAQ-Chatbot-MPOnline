@@ -13,7 +13,9 @@ function ChatPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const threadRef = useRef(null);
-  const activeSessionId = searchParams.get("session") ? Number(searchParams.get("session")) : null;
+  const rawSessionId = searchParams.get("session");
+  const isDraftMode = searchParams.get("draft") === "1" && !rawSessionId;
+  const activeSessionId = rawSessionId ? Number(rawSessionId) : null;
 
   const activeSession = useMemo(
     () => sessions.find((item) => item.id === activeSessionId) || null,
@@ -27,6 +29,8 @@ function ChatPage() {
 
       if (preferredSessionId) {
         setSearchParams({ session: String(preferredSessionId) });
+      } else if (isDraftMode) {
+        setMessages([]);
       } else if (data.length > 0) {
         const current = activeSessionId;
         const nextId =
@@ -64,6 +68,14 @@ function ChatPage() {
   useEffect(() => {
     loadMessages(activeSessionId);
   }, [activeSessionId]);
+
+  useEffect(() => {
+    if (isDraftMode) {
+      setMessages([]);
+      setError("");
+      setNotice("");
+    }
+  }, [isDraftMode]);
 
   useEffect(() => {
     const thread = threadRef.current;
@@ -124,9 +136,10 @@ function ChatPage() {
     <section className="chat-only-page">
       <div className="chatgpt-main">
         <header className="chatgpt-header">
-          <div>
+            <div>
             <p className="eyebrow">Grounded RAG Chat</p>
             <h2>{activeSession?.title || "New chat"}</h2>
+            {isDraftMode && <small className="muted">This draft will be saved only after your first message.</small>}
           </div>
           <div className="chat-header-actions">
             <select value={language} onChange={(event) => setLanguage(event.target.value)}>

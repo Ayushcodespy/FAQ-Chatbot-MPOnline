@@ -30,6 +30,8 @@ class FAISSVectorStore:
     def _save(self) -> None:
         if self.index is not None:
             faiss.write_index(self.index, str(self.index_path))
+        elif self.index_path.exists():
+            self.index_path.unlink()
         self.metadata_path.write_text(
             json.dumps(self.metadata, ensure_ascii=False, indent=2),
             encoding="utf-8",
@@ -69,6 +71,30 @@ class FAISSVectorStore:
             item["score"] = float(score)
             results.append(item)
         return results
+
+    def remove_document(self, document_id: int) -> None:
+        if self.index is None or not self.metadata:
+            return
+
+        keep_indices = [index for index, item in enumerate(self.metadata) if item.get("document_id") != document_id]
+        if len(keep_indices) == len(self.metadata):
+            return
+
+        if not keep_indices:
+            self.index = None
+            self.metadata = []
+            self.dimension = None
+            self._save()
+            return
+
+        vectors = np.array([self.index.reconstruct(index) for index in keep_indices], dtype="float32")
+        next_metadata = [self.metadata[index] for index in keep_indices]
+
+        self.index = faiss.IndexFlatIP(vectors.shape[1])
+        self.dimension = vectors.shape[1]
+        self.index.add(vectors)
+        self.metadata = next_metadata
+        self._save()
 
 
 vector_store = FAISSVectorStore()

@@ -23,6 +23,16 @@ class Settings(BaseSettings):
     bootstrap_admin_username: str | None = None
     bootstrap_admin_email: str | None = None
     bootstrap_admin_password: str | None = None
+    otp_expiry_minutes: int = 10
+
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_username: str | None = None
+    smtp_password: str | None = None
+    smtp_from_email: str | None = None
+    smtp_from_name: str = "MPOnline FAQ Chatbot"
+    smtp_use_tls: bool = True
+    smtp_use_ssl: bool = False
 
     llm_provider: str = "openai"
     openai_api_key: str | None = None

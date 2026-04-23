@@ -11,7 +11,16 @@ function GrievanceThread({
       <div className="grievance-comment-stream">
         {grievance.comments?.length ? (
           grievance.comments.map((comment) => (
-            <div className="grievance-comment" key={comment.id}>
+            <div
+              className={
+                comment.comment_type === "status_update"
+                  ? "grievance-comment status-update"
+                  : comment.role === "admin" || comment.role === "expert"
+                    ? "grievance-comment staff-comment"
+                    : "grievance-comment"
+              }
+              key={comment.id}
+            >
               <div className="grievance-comment-head">
                 <div className="grievance-comment-author">
                   <strong>{comment.username || "System"}</strong>

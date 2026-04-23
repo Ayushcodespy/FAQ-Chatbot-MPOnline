@@ -11,4 +11,3 @@ app/uploads/*
 !app/uploads/.gitkeep
 frontend/node_modules/
 frontend/dist/
-

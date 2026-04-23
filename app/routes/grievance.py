@@ -12,6 +12,11 @@ from app.models.schemas import (
     GrievanceRead,
     GrievanceStatusUpdate,
 )
+from app.services.email_service import (
+    send_grievance_comment_email,
+    send_grievance_status_email,
+    send_grievance_submission_email,
+)
 from app.services.notification_service import create_notification, notify_roles
 
 
@@ -83,6 +88,7 @@ def create_grievance(
     grievance = Grievance(user_id=current_user.id, complaint=payload.complaint)
     db.add(grievance)
     db.commit()
+    send_grievance_submission_email(current_user.email, current_user.username, grievance.id)
     notify_roles(
         db,
         [UserRole.ADMIN, UserRole.EXPERT],
@@ -158,6 +164,13 @@ def update_grievance_status(
             "/grievances",
             "grievance",
         )
+        if grievance.user:
+            send_grievance_status_email(
+                grievance.user.email,
+                grievance.user.username,
+                grievance.id,
+                payload.status,
+            )
 
     db.commit()
     grievance = _get_grievance_or_404(db, grievance_id)
@@ -202,6 +215,13 @@ def add_grievance_comment(
             "/grievances",
             "grievance_comment",
         )
+        if grievance.user:
+            send_grievance_comment_email(
+                grievance.user.email,
+                grievance.user.username,
+                grievance.id,
+                current_user.username,
+            )
     else:
         notify_roles(
             db,

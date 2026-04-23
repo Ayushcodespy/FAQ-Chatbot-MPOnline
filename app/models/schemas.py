@@ -14,8 +14,32 @@ class UserCreate(BaseModel):
 
 
 class UserLogin(BaseModel):
-    username: str
+    email: EmailStr
     password: str
+
+
+class RegisterRequest(BaseModel):
+    username: str = Field(min_length=3, max_length=50)
+    email: EmailStr
+    password: str = Field(min_length=8, max_length=128)
+
+
+class OTPRequest(BaseModel):
+    email: EmailStr
+
+
+class RegisterVerifyRequest(BaseModel):
+    email: EmailStr
+    otp: str = Field(min_length=4, max_length=10)
+
+
+class OTPLoginVerifyRequest(BaseModel):
+    email: EmailStr
+    otp: str = Field(min_length=4, max_length=10)
+
+
+class MessageResponse(BaseModel):
+    message: str
 
 
 class UserRead(BaseModel):
@@ -41,6 +65,13 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     session_id: int
+    answer: str
+    confidence: float
+    sources: list[str]
+    escalated: bool
+
+
+class PublicChatResponse(BaseModel):
     answer: str
     confidence: float
     sources: list[str]
@@ -99,9 +130,20 @@ class ChatMessageRead(BaseModel):
 
 class UploadResponse(BaseModel):
     document_id: int
+    title: str
     filename: str
     chunk_count: int
     message: str
+
+
+class DocumentRead(BaseModel):
+    id: int
+    title: str
+    filename: str
+    chunk_count: int
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ExpertRequest(BaseModel):
@@ -193,6 +235,8 @@ class FailureAnalytics(BaseModel):
     failed_answers: int
     expert_queue_size: int
     unresolved_grievances: int
+    resolved_grievances: int
+    total_grievances: int
 
 
 class UsageAnalytics(BaseModel):
@@ -200,3 +244,6 @@ class UsageAnalytics(BaseModel):
     total_documents: int
     total_feedback_entries: int
     average_feedback_rating: float
+    helpful_feedback_count: int
+    unhelpful_feedback_count: int
+    helpful_feedback_share: float

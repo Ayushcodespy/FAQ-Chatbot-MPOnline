@@ -11,10 +11,12 @@ from app.models.schemas import (
     ChatMessageRead,
     ChatRequest,
     ChatResponse,
+    PublicChatResponse,
     ChatSessionCreate,
     ChatSessionRead,
 )
 from app.services.chat_service import (
+    answer_public_question,
     answer_question,
     create_chat_session,
     delete_chat_session,
@@ -26,6 +28,12 @@ from app.services.chat_service import (
 
 
 router = APIRouter(tags=["Chat"])
+
+
+@router.post("/public/chat", response_model=PublicChatResponse)
+def public_chat(payload: ChatRequest) -> PublicChatResponse:
+    result = answer_public_question(payload.question, payload.language)
+    return PublicChatResponse(**result)
 
 
 @router.post("/chat", response_model=ChatResponse)
