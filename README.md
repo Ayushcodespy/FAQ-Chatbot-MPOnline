@@ -223,3 +223,11 @@ Quick map:
 - Floating chatbot icon can be replaced by placing `chatbot-icon.png` in `frontend/public/chatbot/`.
 - If FAISS files are removed, uploaded DB rows can still exist but vector search will lose those chunks.
 - If PostgreSQL rows are removed but FAISS metadata remains, `/documents` may show indexed fallback documents from vector metadata.
+
+
+
+
+
+
+
+DEMO VIDEO LINK : https://drive.google.com/file/d/1zNdcLvXcIcYlYhLnD33pQEPgP0OeTLJr/view?usp=sharing
