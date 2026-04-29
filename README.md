@@ -227,7 +227,12 @@ Quick map:
 
 
 
+BRD LINK : https://drive.google.com/file/d/10xkN-av3bHEXy1k8D66_u9IXMhaUCqqW/view?usp=drive_link
 
+SRS LINK : https://drive.google.com/file/d/1ZqL9-wAfYEzzg62gSuCjmqCna8YbruTv/view?usp=sharing
 
+PROJECT REPORT LINK : https://drive.google.com/file/d/1uSKQ-IO4VJIr-QVxRjDoTLYYMhIQdC9S/view?usp=drive_link
+
+PROJECT PRESENTATION LINK: https://docs.google.com/presentation/d/1xghSrBN9fpgm8hrcAw2JwMKEOchK4Zje/edit?usp=drive_link&ouid=111535881805042064456&rtpof=true&sd=true
 
 DEMO VIDEO LINK : https://drive.google.com/file/d/1zNdcLvXcIcYlYhLnD33pQEPgP0OeTLJr/view?usp=sharing
