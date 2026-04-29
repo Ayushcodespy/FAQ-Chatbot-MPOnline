@@ -15,6 +15,7 @@ function GrievancePage() {
   const [selectedGrievanceId, setSelectedGrievanceId] = useState(null);
   const [statusDrafts, setStatusDrafts] = useState({});
   const [commentDrafts, setCommentDrafts] = useState({});
+  const [savingStatusId, setSavingStatusId] = useState(null);
   const [submittingCommentId, setSubmittingCommentId] = useState(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -77,9 +78,18 @@ function GrievancePage() {
   };
 
   const updateGrievanceStatus = async (grievanceId) => {
+    if (savingStatusId) return;
+
+    const currentGrievance = grievances.find((item) => item.id === grievanceId);
+    const nextStatus = statusDrafts[grievanceId] || currentGrievance?.status;
+    if (!nextStatus) return;
+
+    setSavingStatusId(grievanceId);
+    setError("");
+    setNotice("");
     try {
       await api.patch(`/grievance/${grievanceId}`, {
-        status: statusDrafts[grievanceId],
+        status: nextStatus,
       });
       setNotice(`Grievance #${grievanceId} updated successfully.`);
       setError("");
@@ -87,6 +97,8 @@ function GrievancePage() {
       window.dispatchEvent(new Event("grievance-change"));
     } catch (requestError) {
       setError(requestError.response?.data?.detail || "Unable to update grievance status.");
+    } finally {
+      setSavingStatusId(null);
     }
   };
 
@@ -283,6 +295,7 @@ function GrievancePage() {
               <div className="status-row grievance-detail-actions">
                 <select
                   className="status-select"
+                  disabled={savingStatusId === selectedGrievance.id}
                   value={statusDrafts[selectedGrievance.id] || selectedGrievance.status}
                   onChange={(event) =>
                     setStatusDrafts((current) => ({
@@ -298,11 +311,15 @@ function GrievancePage() {
                   ))}
                 </select>
                 <button
-                  className="secondary-button"
+                  className="secondary-button loading-button"
+                  disabled={savingStatusId === selectedGrievance.id}
                   onClick={() => updateGrievanceStatus(selectedGrievance.id)}
                   type="button"
                 >
-                  Save Status
+                  {savingStatusId === selectedGrievance.id && (
+                    <span className="button-spinner" aria-hidden="true" />
+                  )}
+                  <span>{savingStatusId === selectedGrievance.id ? "Saving..." : "Save Status"}</span>
                 </button>
               </div>
             )}

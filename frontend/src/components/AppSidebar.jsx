@@ -350,6 +350,7 @@ function AppSidebar({ collapsed, grievanceCount, onToggleCollapse, user }) {
                 <button
                   key={value}
                   className={feedbackRating === value ? "rating-pill active" : "rating-pill"}
+                  disabled={feedbackLoading}
                   onClick={() => setFeedbackRating(value)}
                   type="button"
                 >
@@ -358,8 +359,9 @@ function AppSidebar({ collapsed, grievanceCount, onToggleCollapse, user }) {
               ))}
             </div>
             {feedbackError && <p className="error-text">{feedbackError}</p>}
-            <button className="primary-button" disabled={feedbackLoading} onClick={submitSessionFeedback} type="button">
-              {feedbackLoading ? "Submitting..." : "Submit feedback"}
+            <button className="primary-button loading-button" disabled={feedbackLoading} onClick={submitSessionFeedback} type="button">
+              {feedbackLoading && <span className="button-spinner" aria-hidden="true" />}
+              <span>{feedbackLoading ? "Submitting..." : "Submit feedback"}</span>
             </button>
           </div>
         </div>

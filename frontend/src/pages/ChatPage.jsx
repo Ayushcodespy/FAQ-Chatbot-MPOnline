@@ -10,6 +10,8 @@ function ChatPage() {
   const [sessions, setSessions] = useState([]);
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [feedbackSubmittingIds, setFeedbackSubmittingIds] = useState([]);
+  const [submittedFeedbackIds, setSubmittedFeedbackIds] = useState([]);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const threadRef = useRef(null);
@@ -85,7 +87,7 @@ function ChatPage() {
 
   const sendMessage = async (event) => {
     event.preventDefault();
-    if (!question.trim()) return;
+    if (loading || !question.trim()) return;
 
     setError("");
     setNotice("");
@@ -120,15 +122,31 @@ function ChatPage() {
   };
 
   const submitFeedback = async (message, rating) => {
+    if (
+      submittedFeedbackIds.includes(message.id) ||
+      feedbackSubmittingIds.includes(message.id)
+    ) {
+      return;
+    }
+
+    setFeedbackSubmittingIds((current) =>
+      current.includes(message.id) ? current : [...current, message.id]
+    );
+    setError("");
     try {
       await api.post("/feedback", {
         question: message.question,
         answer: message.answer,
         rating,
       });
+      setSubmittedFeedbackIds((current) =>
+        current.includes(message.id) ? current : [...current, message.id]
+      );
       setNotice("Feedback submitted.");
     } catch (requestError) {
       setError(requestError.response?.data?.detail || "Feedback submission failed.");
+    } finally {
+      setFeedbackSubmittingIds((current) => current.filter((id) => id !== message.id));
     }
   };
 
@@ -159,46 +177,65 @@ function ChatPage() {
               </p>
             </div>
           ) : (
-            messages.map((message) => (
-              <div className="thread-block" key={message.id}>
-                <div className="thread-row user">
-                  <div className="avatar user-avatar">U</div>
-                  <div className="thread-content">
-                    <p>{message.question}</p>
-                  </div>
-                </div>
+            messages.map((message) => {
+              const feedbackSubmitted = submittedFeedbackIds.includes(message.id);
+              const feedbackSubmitting = feedbackSubmittingIds.includes(message.id);
 
-                <div className="thread-row assistant">
-                  <div className="avatar assistant-avatar">AI</div>
-                  <div className="thread-content assistant-card">
-                    <div className="bubble-head">
-                      <strong>Assistant</strong>
-                      <span className={message.escalated ? "badge warning" : "badge success"}>
-                        {message.escalated ? "Escalated" : "Grounded"}
-                      </span>
+              return (
+                <div className="thread-block" key={message.id}>
+                  <div className="thread-row user">
+                    <div className="avatar user-avatar">U</div>
+                    <div className="thread-content">
+                      <p>{message.question}</p>
                     </div>
-                    <div className="markdown-answer">
-                      <ReactMarkdown>{message.answer}</ReactMarkdown>
-                    </div>
-                    <small>
-                      Confidence: {message.confidence} | Sources:{" "}
-                      {message.sources?.length ? message.sources.join(", ") : "None"}
-                    </small>
-                    <div className="action-row">
-                      <button onClick={() => askExpert(message)} type="button">
-                        Ask Expert
-                      </button>
-                      <button onClick={() => submitFeedback(message, 5)} type="button">
-                        Helpful
-                      </button>
-                      <button onClick={() => submitFeedback(message, 2)} type="button">
-                        Not Helpful
-                      </button>
+                  </div>
+
+                  <div className="thread-row assistant">
+                    <div className="avatar assistant-avatar">AI</div>
+                    <div className="thread-content assistant-card">
+                      <div className="bubble-head">
+                        <strong>Assistant</strong>
+                        <span className={message.escalated ? "badge warning" : "badge success"}>
+                          {message.escalated ? "Escalated" : "Grounded"}
+                        </span>
+                      </div>
+                      <div className="markdown-answer">
+                        <ReactMarkdown>{message.answer}</ReactMarkdown>
+                      </div>
+                      <small>
+                        Confidence: {message.confidence} | Sources:{" "}
+                        {message.sources?.length ? message.sources.join(", ") : "None"}
+                      </small>
+                      <div className="action-row">
+                        <button onClick={() => askExpert(message)} type="button">
+                          Ask Expert
+                        </button>
+                        {!feedbackSubmitted && (
+                          <>
+                            <button
+                              className={feedbackSubmitting ? "loading-button" : undefined}
+                              disabled={feedbackSubmitting}
+                              onClick={() => submitFeedback(message, 5)}
+                              type="button"
+                            >
+                              {feedbackSubmitting && <span className="button-spinner" aria-hidden="true" />}
+                              <span>{feedbackSubmitting ? "Submitting..." : "Helpful"}</span>
+                            </button>
+                            <button
+                              disabled={feedbackSubmitting}
+                              onClick={() => submitFeedback(message, 2)}
+                              type="button"
+                            >
+                              Not Helpful
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
 
@@ -218,8 +255,13 @@ function ChatPage() {
                 }
               }}
             />
-            <button className="primary-button send-button" disabled={loading} type="submit">
-              {loading ? "Thinking..." : "Send"}
+            <button
+              className={loading ? "primary-button send-button loading-button is-loading" : "primary-button send-button"}
+              disabled={loading}
+              type="submit"
+            >
+              {loading && <span className="button-spinner" aria-hidden="true" />}
+              <span>{loading ? "Thinking..." : "Send"}</span>
             </button>
           </div>
         </form>

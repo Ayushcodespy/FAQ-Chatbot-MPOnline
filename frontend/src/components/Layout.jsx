@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AppSidebar from "./AppSidebar";
 import { useAuth } from "../context/AuthContext";
@@ -22,6 +22,8 @@ function Layout({ children }) {
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedNotificationIds, setSelectedNotificationIds] = useState([]);
+  const notificationMenuRef = useRef(null);
+  const profileMenuRef = useRef(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     return localStorage.getItem("app_sidebar_collapsed") === "true";
   });
@@ -88,6 +90,38 @@ function Layout({ children }) {
     };
   }, [user]);
 
+  useEffect(() => {
+    if (!profileOpen && !notificationOpen) return undefined;
+
+    const closeMenusOnOutsideClick = (event) => {
+      const target = event.target;
+
+      if (
+        profileOpen &&
+        profileMenuRef.current &&
+        !profileMenuRef.current.contains(target)
+      ) {
+        setProfileOpen(false);
+      }
+
+      if (
+        notificationOpen &&
+        notificationMenuRef.current &&
+        !notificationMenuRef.current.contains(target)
+      ) {
+        setNotificationOpen(false);
+        setSelectionMode(false);
+        setSelectedNotificationIds([]);
+      }
+    };
+
+    document.addEventListener("pointerdown", closeMenusOnOutsideClick);
+
+    return () => {
+      document.removeEventListener("pointerdown", closeMenusOnOutsideClick);
+    };
+  }, [profileOpen, notificationOpen]);
+
   const logout = () => {
     clearSession();
     navigate("/");
@@ -99,6 +133,27 @@ function Layout({ children }) {
       localStorage.setItem("app_sidebar_collapsed", String(next));
       return next;
     });
+  };
+
+  const toggleNotificationMenu = () => {
+    const willOpen = !notificationOpen;
+    setNotificationOpen(willOpen);
+    if (willOpen) {
+      setProfileOpen(false);
+    } else {
+      setSelectionMode(false);
+      setSelectedNotificationIds([]);
+    }
+  };
+
+  const toggleProfileMenu = () => {
+    const willOpen = !profileOpen;
+    setProfileOpen(willOpen);
+    if (willOpen) {
+      setNotificationOpen(false);
+      setSelectionMode(false);
+      setSelectedNotificationIds([]);
+    }
   };
 
   const openNotificationItem = async (item) => {
@@ -114,11 +169,17 @@ function Layout({ children }) {
       if (item.link) {
         navigate(item.link);
       }
+      setNotificationOpen(false);
+      setSelectionMode(false);
+      setSelectedNotificationIds([]);
       window.dispatchEvent(new Event("notification-change"));
     } catch {
       if (item.link) {
         navigate(item.link);
       }
+      setNotificationOpen(false);
+      setSelectionMode(false);
+      setSelectedNotificationIds([]);
     }
   };
 
@@ -172,10 +233,10 @@ function Layout({ children }) {
         </div>
 
         <div className="topbar-actions">
-          <div className="notification-wrap">
+          <div className="notification-wrap" ref={notificationMenuRef}>
             <button
               className="notification-trigger"
-              onClick={() => setNotificationOpen((current) => !current)}
+              onClick={toggleNotificationMenu}
               type="button"
               aria-label="Open notifications"
             >
@@ -259,10 +320,10 @@ function Layout({ children }) {
             )}
           </div>
 
-          <div className="profile-menu-wrap">
+          <div className="profile-menu-wrap" ref={profileMenuRef}>
             <button
               className="profile-trigger"
-              onClick={() => setProfileOpen((current) => !current)}
+              onClick={toggleProfileMenu}
               type="button"
             >
               <span className="profile-avatar">{user?.username?.slice(0, 1)?.toUpperCase() || "U"}</span>

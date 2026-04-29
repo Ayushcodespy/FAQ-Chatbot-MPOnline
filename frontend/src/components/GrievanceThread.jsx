@@ -59,11 +59,13 @@ function GrievanceThread({
           rows={3}
           placeholder={placeholder}
           value={draftValue}
+          disabled={isSubmitting}
           onChange={(event) => onDraftChange(event.target.value)}
         />
         <div className="grievance-comment-actions">
-          <button className="secondary-button" disabled={isSubmitting || !draftValue.trim()} type="submit">
-            {isSubmitting ? "Posting..." : "Post reply"}
+          <button className="secondary-button loading-button" disabled={isSubmitting || !draftValue.trim()} type="submit">
+            {isSubmitting && <span className="button-spinner" aria-hidden="true" />}
+            <span>{isSubmitting ? "Posting..." : "Post reply"}</span>
           </button>
         </div>
       </form>
