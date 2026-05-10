@@ -1,4 +1,5 @@
 import json
+import re
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
@@ -7,6 +8,57 @@ from app.config import get_settings
 from app.models.entities import ChatHistory, ChatMessage, ChatSession, ExpertQuery, User, UserRole
 from app.services.ai_service import AIService
 from app.services.vector_store import vector_store
+
+
+GREETING_PHRASES = {
+    "hello",
+    "hello there",
+    "hi",
+    "hii",
+    "hiii",
+    "hey",
+    "hey there",
+    "good morning",
+    "good afternoon",
+    "good evening",
+    "namaste",
+    "namaskar",
+}
+
+GREETING_WORDS = {"hello", "hi", "hii", "hiii", "hey", "there", "namaste", "namaskar"}
+
+
+def _normalize_small_talk(text: str) -> str:
+    normalized = re.sub(r"[^a-zA-Z\s]", " ", text).lower()
+    normalized = re.sub(r"\s+", " ", normalized).strip()
+    normalized = re.sub(r"\bhi+\b", "hii", normalized)
+    return normalized
+
+
+def _is_greeting(question: str) -> bool:
+    normalized = _normalize_small_talk(question)
+    if not normalized:
+        return False
+
+    if normalized in GREETING_PHRASES:
+        return True
+
+    words = normalized.split()
+    return len(words) <= 3 and all(word in GREETING_WORDS for word in words)
+
+
+def _greeting_payload(language: str) -> dict:
+    if language == "hi":
+        answer = "Namaste! Main MPOnline FAQ AI assistant hoon. Main aapki kaise madad kar sakta hoon?"
+    else:
+        answer = "Hello! I am an AI assistant for MPOnline FAQs. How can I help you today?"
+
+    return {
+        "answer": answer,
+        "confidence": 1.0,
+        "sources": [],
+        "escalated": False,
+    }
 
 
 def create_expert_query(db: Session, user: User, question: str, reason: str) -> ExpertQuery:
@@ -73,6 +125,9 @@ def delete_chat_session(db: Session, user: User, session_id: int) -> None:
 
 
 def generate_answer_payload(question: str, language: str) -> dict:
+    if _is_greeting(question):
+        return _greeting_payload(language)
+
     settings = get_settings()
     if vector_store.index is None or vector_store.index.ntotal == 0:
         raise HTTPException(

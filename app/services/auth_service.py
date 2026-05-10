@@ -186,6 +186,11 @@ def ensure_bootstrap_admin(
 
     existing = db.query(User).filter((User.username == username) | (User.email == email)).first()
     if existing:
+        existing.username = username
+        existing.email = email
+        existing.password_hash = hash_password(password)
+        existing.role = UserRole.ADMIN
+        db.commit()
         return
 
     admin = User(
