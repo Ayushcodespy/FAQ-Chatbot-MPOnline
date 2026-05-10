@@ -19,6 +19,7 @@ Before public deployment, rotate any key that was ever copied into `.env.example
 3. Render reads `render.yaml` and creates:
    - `faq-chatbot-api`
    - `faq-chatbot-db`
+   Both are configured with `plan: free` for demo deployment.
 4. Fill all `sync: false` environment variables in Render:
    - `BOOTSTRAP_ADMIN_EMAIL`
    - `BOOTSTRAP_ADMIN_PASSWORD`
@@ -45,7 +46,9 @@ https://your-backend.onrender.com/docs
 
 The app stores uploaded documents and FAISS index files on disk. Render service filesystems are ephemeral unless you attach a persistent disk.
 
-For production, add a persistent disk to the backend service:
+For a completely free demo, skip the persistent disk. The app can run, but uploaded files and FAISS index files can disappear after restart/redeploy.
+
+For production, add a persistent disk to the backend service. Persistent disks are not part of the free demo setup:
 
 ```text
 Mount path: /opt/render/project/src/app/storage
@@ -60,6 +63,8 @@ UPLOAD_DIR=/opt/render/project/src/app/storage/uploads
 ```
 
 Without this disk, uploads and vector files can disappear after redeploy/restart.
+
+Render free web services also block outbound SMTP ports such as `465` and `587`. Password login works, but OTP email features may not work on the free backend unless you switch email sending to an HTTP-based email API.
 
 ## 4. Deploy Frontend On Vercel
 
