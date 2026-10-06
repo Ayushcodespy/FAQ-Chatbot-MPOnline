@@ -31,10 +31,7 @@ function LoginPage() {
   const { setSession } = useAuth();
   const [mode, setMode] = useState("login-password");
   const [loginData, setLoginData] = useState({ email: "", password: "" });
-  const [otpLoginData, setOtpLoginData] = useState({ email: "", otp: "" });
   const [registerData, setRegisterData] = useState(initialRegisterState);
-  const [registerOtp, setRegisterOtp] = useState("");
-  const [registerStep, setRegisterStep] = useState("form");
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -48,8 +45,7 @@ function LoginPage() {
     setError("");
   };
 
-  const showRegistrationForm = mode === "register" && registerStep === "form";
-  const showRegistrationOtp = mode === "register" && registerStep === "otp";
+  const showRegistrationForm = mode === "register";
 
   const renderAuthFields = () => {
     if (showRegistrationForm) {
@@ -89,60 +85,6 @@ function LoginPage() {
       );
     }
 
-    if (showRegistrationOtp) {
-      return (
-        <>
-          <p className="muted">Enter the OTP sent to {registerData.email}.</p>
-          <input type="email" value={registerData.email} disabled aria-label="Registration email" />
-          <input
-            placeholder="Enter 6-digit verification OTP"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={6}
-            value={registerOtp}
-            onChange={(event) => setRegisterOtp(event.target.value.replace(/\D/g, ""))}
-            required
-            autoFocus
-          />
-          <button
-            className="secondary-button"
-            type="button"
-            disabled={loading}
-            onClick={() => {
-              setRegisterStep("form");
-              setRegisterOtp("");
-              resetMessages();
-            }}
-          >
-            Back to registration
-          </button>
-        </>
-      );
-    }
-
-    if (mode === "login-otp") {
-      return (
-        <>
-          <input
-            placeholder="Email"
-            type="email"
-            value={otpLoginData.email}
-            onChange={(event) =>
-              setOtpLoginData((current) => ({ ...current, email: event.target.value }))
-            }
-            required
-          />
-          <input
-            placeholder="Enter OTP after requesting it"
-            value={otpLoginData.otp}
-            onChange={(event) =>
-              setOtpLoginData((current) => ({ ...current, otp: event.target.value }))
-            }
-          />
-        </>
-      );
-    }
-
     return (
       <>
         <input
@@ -177,24 +119,8 @@ function LoginPage() {
         const { data } = await api.post("/auth/login/password", loginData);
         setSession(data.access_token, data.user);
         redirectAfterAuth(data.user);
-      } else if (mode === "login-otp") {
-        if (!otpLoginData.otp.trim()) {
-          const { data } = await api.post("/auth/login/request-otp", { email: otpLoginData.email });
-          setNotice(data.message);
-        } else {
-          const { data } = await api.post("/auth/login/verify-otp", otpLoginData);
-          setSession(data.access_token, data.user);
-          redirectAfterAuth(data.user);
-        }
-      } else if (registerStep === "form") {
-        const { data } = await api.post("/auth/register/request-otp", registerData);
-        setRegisterStep("otp");
-        setNotice(data.message);
       } else {
-        const { data } = await api.post("/auth/register/verify-otp", {
-          email: registerData.email,
-          otp: registerOtp,
-        });
+        const { data } = await api.post("/auth/register", registerData);
         setSession(data.access_token, data.user);
         redirectAfterAuth(data.user);
       }
@@ -212,35 +138,10 @@ function LoginPage() {
           <p className="eyebrow">AI + RAG</p>
           <h2>MPOnline FAQ Chatbot</h2>
           <p className="muted">
-            Sign in with your email using either password or OTP. New users verify their
-            email with an OTP before the account is created.
+            Create an account with your email and password, then use the same password to
+            sign in.
           </p>
         </div>
-
-        {mode !== "register" && (
-          <div className="tab-row">
-            <button
-              className={mode === "login-password" ? "tab active" : "tab"}
-              onClick={() => {
-                setMode("login-password");
-                resetMessages();
-              }}
-              type="button"
-            >
-              Login With Password
-            </button>
-            <button
-              className={mode === "login-otp" ? "tab active" : "tab"}
-              onClick={() => {
-                setMode("login-otp");
-                resetMessages();
-              }}
-              type="button"
-            >
-              Login With OTP
-            </button>
-          </div>
-        )}
 
         <form onSubmit={handleSubmit} className="form-grid">
           {renderAuthFields()}
@@ -252,13 +153,7 @@ function LoginPage() {
               ? "Please wait..."
               : mode === "login-password"
                 ? "Login"
-                : mode === "login-otp"
-                  ? otpLoginData.otp.trim()
-                    ? "Verify OTP"
-                    : "Send Login OTP"
-                  : registerStep === "otp"
-                    ? "Verify And Create Account"
-                    : "Send Registration OTP"}
+                : "Create Account"}
           </button>
         </form>
 
@@ -269,8 +164,6 @@ function LoginPage() {
               <button
                 onClick={() => {
                   setMode("login-password");
-                  setRegisterStep("form");
-                  setRegisterOtp("");
                   resetMessages();
                 }}
                 type="button"
@@ -284,8 +177,6 @@ function LoginPage() {
               <button
                 onClick={() => {
                   setMode("register");
-                  setRegisterStep("form");
-                  setRegisterOtp("");
                   resetMessages();
                 }}
                 type="button"
