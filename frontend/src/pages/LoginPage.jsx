@@ -31,6 +31,121 @@ function LoginPage() {
     setError("");
   };
 
+  const showRegistrationForm = mode === "register" && registerStep === "form";
+  const showRegistrationOtp = mode === "register" && registerStep === "otp";
+
+  const renderAuthFields = () => {
+    if (showRegistrationForm) {
+      return (
+        <>
+          <input
+            placeholder="Username"
+            value={registerData.username}
+            onChange={(event) =>
+              setRegisterData((current) => ({ ...current, username: event.target.value }))
+            }
+            required
+          />
+          <input
+            placeholder="Email"
+            type="email"
+            value={registerData.email}
+            onChange={(event) =>
+              setRegisterData((current) => ({ ...current, email: event.target.value }))
+            }
+            required
+          />
+          <input
+            placeholder="Password"
+            type="password"
+            value={registerData.password}
+            onChange={(event) =>
+              setRegisterData((current) => ({ ...current, password: event.target.value }))
+            }
+            required
+          />
+        </>
+      );
+    }
+
+    if (showRegistrationOtp) {
+      return (
+        <>
+          <p className="muted">Enter the OTP sent to {registerData.email}.</p>
+          <input type="email" value={registerData.email} disabled aria-label="Registration email" />
+          <input
+            placeholder="Enter 6-digit verification OTP"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={6}
+            value={registerOtp}
+            onChange={(event) => setRegisterOtp(event.target.value.replace(/\D/g, ""))}
+            required
+            autoFocus
+          />
+          <button
+            className="secondary-button"
+            type="button"
+            disabled={loading}
+            onClick={() => {
+              setRegisterStep("form");
+              setRegisterOtp("");
+              resetMessages();
+            }}
+          >
+            Back to registration
+          </button>
+        </>
+      );
+    }
+
+    if (mode === "login-otp") {
+      return (
+        <>
+          <input
+            placeholder="Email"
+            type="email"
+            value={otpLoginData.email}
+            onChange={(event) =>
+              setOtpLoginData((current) => ({ ...current, email: event.target.value }))
+            }
+            required
+          />
+          <input
+            placeholder="Enter OTP after requesting it"
+            value={otpLoginData.otp}
+            onChange={(event) =>
+              setOtpLoginData((current) => ({ ...current, otp: event.target.value }))
+            }
+          />
+        </>
+      );
+    }
+
+    return (
+      <>
+        <input
+          placeholder="Email"
+          type="email"
+          value={loginData.email}
+          onChange={(event) =>
+            setLoginData((current) => ({ ...current, email: event.target.value }))
+          }
+          required
+        />
+        <input
+          placeholder="Password"
+          type="password"
+          value={loginData.password}
+          onChange={(event) =>
+            setLoginData((current) => ({ ...current, password: event.target.value }))
+          }
+          required
+        />
+      </>
+    );
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     resetMessages();
@@ -107,88 +222,7 @@ function LoginPage() {
         )}
 
         <form onSubmit={handleSubmit} className="form-grid">
-          {mode === "register" ? (
-            registerStep === "form" ? (
-              <>
-                <input
-                  placeholder="Username"
-                  value={registerData.username}
-                  onChange={(event) =>
-                    setRegisterData((current) => ({ ...current, username: event.target.value }))
-                  }
-                  required
-                />
-                <input
-                  placeholder="Email"
-                  type="email"
-                  value={registerData.email}
-                  onChange={(event) =>
-                    setRegisterData((current) => ({ ...current, email: event.target.value }))
-                  }
-                  required
-                />
-                <input
-                  placeholder="Password"
-                  type="password"
-                  value={registerData.password}
-                  onChange={(event) =>
-                    setRegisterData((current) => ({ ...current, password: event.target.value }))
-                  }
-                  required
-                />
-              </>
-            ) : (
-              <>
-                <input type="email" value={registerData.email} disabled />
-                <input
-                  placeholder="Enter verification OTP"
-                  value={registerOtp}
-                  onChange={(event) => setRegisterOtp(event.target.value)}
-                  required
-                />
-              </>
-            )
-          ) : mode === "login-otp" ? (
-            <>
-              <input
-                placeholder="Email"
-                type="email"
-                value={otpLoginData.email}
-                onChange={(event) =>
-                  setOtpLoginData((current) => ({ ...current, email: event.target.value }))
-                }
-                required
-              />
-              <input
-                placeholder="Enter OTP after requesting it"
-                value={otpLoginData.otp}
-                onChange={(event) =>
-                  setOtpLoginData((current) => ({ ...current, otp: event.target.value }))
-                }
-              />
-            </>
-          ) : (
-            <>
-              <input
-                placeholder="Email"
-                type="email"
-                value={loginData.email}
-                onChange={(event) =>
-                  setLoginData((current) => ({ ...current, email: event.target.value }))
-                }
-                required
-              />
-              <input
-                placeholder="Password"
-                type="password"
-                value={loginData.password}
-                onChange={(event) =>
-                  setLoginData((current) => ({ ...current, password: event.target.value }))
-                }
-                required
-              />
-            </>
-          )}
+          {renderAuthFields()}
 
           {notice && <p className="success-text">{notice}</p>}
           {error && <p className="error-text">{error}</p>}
