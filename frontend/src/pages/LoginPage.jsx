@@ -9,6 +9,23 @@ const initialRegisterState = {
   password: "",
 };
 
+const getRequestErrorMessage = (requestError) => {
+  const detail = requestError.response?.data?.detail;
+
+  if (typeof detail === "string") {
+    return detail;
+  }
+
+  if (Array.isArray(detail)) {
+    return detail
+      .map((item) => item?.msg)
+      .filter(Boolean)
+      .join(" ") || "Please check the information you entered.";
+  }
+
+  return "Authentication failed.";
+};
+
 function LoginPage() {
   const navigate = useNavigate();
   const { setSession } = useAuth();
@@ -44,6 +61,8 @@ function LoginPage() {
             onChange={(event) =>
               setRegisterData((current) => ({ ...current, username: event.target.value }))
             }
+            minLength={3}
+            maxLength={50}
             required
           />
           <input
@@ -62,6 +81,8 @@ function LoginPage() {
             onChange={(event) =>
               setRegisterData((current) => ({ ...current, password: event.target.value }))
             }
+            minLength={8}
+            maxLength={128}
             required
           />
         </>
@@ -178,7 +199,7 @@ function LoginPage() {
         redirectAfterAuth(data.user);
       }
     } catch (requestError) {
-      setError(requestError.response?.data?.detail || "Authentication failed.");
+      setError(getRequestErrorMessage(requestError));
     } finally {
       setLoading(false);
     }

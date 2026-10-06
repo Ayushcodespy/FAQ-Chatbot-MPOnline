@@ -18,7 +18,19 @@ api.interceptors.request.use((config) => {
 export const authStorage = {
   getUser: () => {
     const raw = localStorage.getItem("auth_user");
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) {
+      return null;
+    }
+
+    try {
+      const user = JSON.parse(raw);
+      return user && typeof user === "object" ? user : null;
+    } catch {
+      // A stale or malformed browser session must never prevent the app from rendering.
+      localStorage.removeItem("auth_user");
+      localStorage.removeItem("auth_token");
+      return null;
+    }
   },
   setSession: (token, user) => {
     localStorage.setItem("auth_token", token);
